@@ -1368,7 +1368,7 @@ FIO_compressZstdFrame(FIO_ctx_t* const fCtx,
                                 cShare );
                 } else if (g_display_prefs.displayLevel >= 2 || g_display_prefs.progressSetting == FIO_ps_always) {
                     /* Require level 2 or forcibly displayed progress counter for summarized updates */
-                    DISPLAYLEVEL(1, "\r%79s\r", "");    /* Clear out the current displayed line */
+                    // DISPLAYLEVEL(1, "\r%79s\r", "");    /* Clear out the current displayed line */
                     if (fCtx->nbFilesTotal > 1) {
                         size_t srcFileNameSize = strlen(srcFileName);
                         /* Ensure that the string we print is roughly the same size each time */
@@ -1381,10 +1381,10 @@ FIO_compressZstdFrame(FIO_ctx_t* const fCtx,
                                         fCtx->currFileIdx+1, fCtx->nbFilesTotal, (int)(18-srcFileNameSize), srcFileName);
                         }
                     }
-                    DISPLAYLEVEL(1, "Read:%6.*f%4s ", consumed_hrs.precision, consumed_hrs.value, consumed_hrs.suffix);
-                    if (fileSize != UTIL_FILESIZE_UNKNOWN)
-                        DISPLAYLEVEL(2, "/%6.*f%4s", file_hrs.precision, file_hrs.value, file_hrs.suffix);
-                    DISPLAYLEVEL(1, " ==> %2.f%%", cShare);
+                    // DISPLAYLEVEL(1, "Read:%6.*f%4s ", consumed_hrs.precision, consumed_hrs.value, consumed_hrs.suffix);
+                    // if (fileSize != UTIL_FILESIZE_UNKNOWN)
+                    //     DISPLAYLEVEL(2, "/%6.*f%4s", file_hrs.precision, file_hrs.value, file_hrs.suffix);
+                    // DISPLAYLEVEL(1, " ==> %2.f%%", cShare);
                     DELAY_NEXT_UPDATE();
                 }
 
@@ -1550,7 +1550,7 @@ FIO_compressFilename_internal(FIO_ctx_t* const fCtx,
     /* Status */
     fCtx->totalBytesInput += (size_t)readsize;
     fCtx->totalBytesOutput += (size_t)compressedfilesize;
-    DISPLAYLEVEL(2, "\r%79s\r", "");
+    // DISPLAYLEVEL(2, "\r%79s\r", "");
     if (g_display_prefs.displayLevel >= 2 &&
         !fCtx->hasStdoutOutput &&
         (g_display_prefs.displayLevel >= 3 || fCtx->nbFilesTotal <= 1)) {
@@ -1563,12 +1563,10 @@ FIO_compressFilename_internal(FIO_ctx_t* const fCtx,
                 hr_osize.precision, hr_osize.value, hr_osize.suffix,
                 dstFileName);
         } else {
-            DISPLAYLEVEL(2,"%-20s :%6.2f%%   (%6.*f%s => %6.*f%s, %s) \n",
-                srcFileName,
+            DISPLAYLEVEL(2,"%6.2f%%   (%10lu => %10lu) \n",
                 (double)compressedfilesize / (double)readsize * 100,
-                hr_isize.precision, hr_isize.value, hr_isize.suffix,
-                hr_osize.precision, hr_osize.value, hr_osize.suffix,
-                dstFileName);
+                readsize,
+                compressedfilesize);
         }
     }
 
@@ -1578,8 +1576,8 @@ FIO_compressFilename_internal(FIO_ctx_t* const fCtx,
         U64 const timeLength_ns = UTIL_clockSpanNano(timeStart);
         double const timeLength_s = (double)timeLength_ns / 1000000000;
         double const cpuLoad_pct = (cpuLoad_s / timeLength_s) * 100;
-        DISPLAYLEVEL(4, "%-20s : Completed in %.2f sec  (cpu load : %.0f%%)\n",
-                        srcFileName, timeLength_s, cpuLoad_pct);
+        DISPLAYLEVEL(2, "zstd Completed in %.6f sec  (cpu load : %.0f%%)\n",
+                        timeLength_s, cpuLoad_pct);
     }
     return 0;
 }

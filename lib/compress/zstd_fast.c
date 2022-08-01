@@ -220,10 +220,12 @@ _start: /* Requires: ip0 */
         const U32 rval = MEM_read32(ip2 - rep_offset1);
 
         /* write back hash table entry */
+        // 永远更新hash表，hash表中只查得到匹配串中最近的那个
         current0 = (U32)(ip0 - base);
         hashTable[hash0] = current0;
 
         /* check repcode at ip[2] */
+        // ip2和ip2-rep_offset1匹配
         if ((MEM_read32(ip2) == rval) & (rep_offset1 > 0)) {
             ip0 = ip2;
             match0 = ip0 - rep_offset1;
@@ -249,6 +251,7 @@ _start: /* Requires: ip0 */
         }
 
         /* check match at ip[0] */
+        // ip0 和 哈希结果 字符串匹配
         if (MEM_read32(ip0) == mval) {
             /* found a match! */
 
@@ -284,6 +287,7 @@ _start: /* Requires: ip0 */
         }
 
         /* check match at ip[0] */
+        // 。。。
         if (MEM_read32(ip0) == mval) {
             /* found a match! */
 
@@ -372,8 +376,9 @@ _offset: /* Requires: ip0, idx */
 _match: /* Requires: ip0, match0, offcode */
 
     /* Count the forward length. */
+    // 计算后面还有多长匹配
     mLength += ZSTD_count(ip0 + mLength, match0 + mLength, iend);
-
+    // 保存一个seq
     ZSTD_storeSeq(seqStore, (size_t)(ip0 - anchor), anchor, iend, offcode, mLength);
 
     ip0 += mLength;

@@ -49,7 +49,7 @@ typedef struct nodeElt_s {
     U32 count;
     U16 parent;
     BYTE byte;
-    BYTE nbBits;
+    BYTE nbBits;  // 树高度（编码长度）
 } nodeElt;
 
 
@@ -656,6 +656,7 @@ static void HUF_sort(nodeElt huffNode[], const unsigned count[], U32 const maxSy
 #define STARTNODE (HUF_SYMBOLVALUE_MAX+1)
 
 /* HUF_buildTree():
+ *  哈夫曼树，表现为结构体数组
  * Takes the huffNode array sorted by HUF_sort() and builds an unlimited-depth Huffman tree.
  *
  * @param huffNode        The array sorted by HUF_sort(). Builds the Huffman tree in this array.
@@ -673,16 +674,19 @@ static int HUF_buildTree(nodeElt* huffNode, U32 maxSymbolValue)
     /* init for parents */
     nonNullRank = (int)maxSymbolValue;
     while(huffNode[nonNullRank].count == 0) nonNullRank--;
-    lowS = nonNullRank; nodeRoot = nodeNb + lowS - 1; lowN = nodeNb;
+    lowS = nonNullRank;                     // 最小概率的节点 
+    nodeRoot = nodeNb + lowS - 1;           //根节点、also位于最后
+    lowN = nodeNb;                          // 起点
     huffNode[nodeNb].count = huffNode[lowS].count + huffNode[lowS-1].count;
-    huffNode[lowS].parent = huffNode[lowS-1].parent = (U16)nodeNb;
-    nodeNb++; lowS-=2;
+    huffNode[lowS].parent = huffNode[lowS-1].parent = (U16)nodeNb;                       //两个最小概率的节点组合
+    nodeNb++;                           //中间节点
+    lowS-=2;                            //减去已经组合的两个节点
     for (n=nodeNb; n<=nodeRoot; n++) huffNode[n].count = (U32)(1U<<30);
     huffNode0[0].count = (U32)(1U<<31);  /* fake entry, strong barrier */
 
     /* create parents */
     while (nodeNb <= nodeRoot) {
-        int const n1 = (huffNode[lowS].count < huffNode[lowN].count) ? lowS-- : lowN++;
+        int const n1 = (huffNode[lowS].count < huffNode[lowN].count) ? lowS-- : lowN++;     //lows指向叶子，lown指向中间节点，取最小的两个节点组合
         int const n2 = (huffNode[lowS].count < huffNode[lowN].count) ? lowS-- : lowN++;
         huffNode[nodeNb].count = huffNode[n1].count + huffNode[n2].count;
         huffNode[n1].parent = huffNode[n2].parent = (U16)nodeNb;
@@ -704,6 +708,7 @@ static int HUF_buildTree(nodeElt* huffNode, U32 maxSymbolValue)
 /**
  * HUF_buildCTableFromTree():
  * Build the CTable given the Huffman tree in huffNode.
+ * 根据哈夫曼树，运用范式哈夫曼编码规则，分配编码值。
  *
  * @param[out] CTable         The output Huffman CTable.
  * @param      huffNode       The Huffman tree.
@@ -716,9 +721,10 @@ static void HUF_buildCTableFromTree(HUF_CElt* CTable, nodeElt const* huffNode, i
     HUF_CElt* const ct = CTable + 1;
     /* fill result into ctable (val, nbBits) */
     int n;
-    U16 nbPerRank[HUF_TABLELOG_MAX+1] = {0};
-    U16 valPerRank[HUF_TABLELOG_MAX+1] = {0};
+    U16 nbPerRank[HUF_TABLELOG_MAX+1] = {0};    // 每种编码长度的个数
+    U16 valPerRank[HUF_TABLELOG_MAX+1] = {0};   // 每层树的起始编码
     int const alphabetSize = (int)(maxSymbolValue + 1);
+    // 统计每种编码长度的个数
     for (n=0; n<=nonNullRank; n++)
         nbPerRank[huffNode[n].nbBits]++;
     /* determine starting value per rank */
@@ -755,11 +761,11 @@ HUF_buildCTable_wksp(HUF_CElt* CTable, const unsigned* count, U32 maxSymbolValue
         return ERROR(maxSymbolValue_tooLarge);
     ZSTD_memset(huffNode0, 0, sizeof(huffNodeTable));
 
-    /* sort, decreasing order */
+    /* sort, decreasing order, symbol按出现次数降序排列 */
     HUF_sort(huffNode, count, maxSymbolValue, wksp_tables->rankPosition);
     DEBUGLOG(6, "sorted symbols completed (%zu symbols)", showHNodeSymbols(huffNode, maxSymbolValue+1));
 
-    /* build tree */
+    /* build tree, 根据symbol频率，构建huffman树*/
     nonNullRank = HUF_buildTree(huffNode, maxSymbolValue);
 
     /* determine and enforce maxTableLog */
@@ -1319,6 +1325,7 @@ HUF_compress_internal (void* dst, size_t dstSize,
 
     /* Build Huffman Tree */
     huffLog = HUF_optimalTableLog(huffLog, srcSize, maxSymbolValue);
+    //
     {   size_t const maxBits = HUF_buildCTable_wksp(table->CTable, table->count,
                                             maxSymbolValue, huffLog,
                                             &table->wksps.buildCTable_wksp, sizeof(table->wksps.buildCTable_wksp));
@@ -1353,6 +1360,7 @@ HUF_compress_internal (void* dst, size_t dstSize,
         if (oldHufTable)
             ZSTD_memcpy(oldHufTable, table->CTable, sizeof(table->CTable));  /* Save new table */
     }
+    // 用CTable编码
     return HUF_compressCTable_internal(ostart, op, oend,
                                        src, srcSize,
                                        nbStreams, table->CTable, bmi2);

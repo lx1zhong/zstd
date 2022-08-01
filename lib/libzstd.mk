@@ -84,7 +84,7 @@ else
   CFLAGS ?= -O3
 endif
 
-DEBUGLEVEL ?= 0
+DEBUGLEVEL ?= 0 
 CPPFLAGS += -DXXH_NAMESPACE=ZSTD_ -DDEBUGLEVEL=$(DEBUGLEVEL)
 ifeq ($(TARGET_SYSTEM),Windows_NT)   # MinGW assumed
   CPPFLAGS += -D__USE_MINGW_ANSI_STDIO   # compatibility with %zu formatting

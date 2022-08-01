@@ -135,6 +135,7 @@ size_t ZSTD_decodeLiteralsBlock(ZSTD_DCtx* dctx,
             ZSTD_FALLTHROUGH;
 
         case set_compressed:
+            DEBUGLOG(5, "set_compressed flag");
             RETURN_ERROR_IF(srcSize < 5, corruption_detected, "srcSize >= MIN_CBLOCK_SIZE == 3; here we need up to 5 for case 3");
             {   size_t lhSize, litSize, litCSize;
                 U32 singleStream=0;
@@ -142,6 +143,7 @@ size_t ZSTD_decodeLiteralsBlock(ZSTD_DCtx* dctx,
                 U32 const lhc = MEM_readLE32(istart);
                 size_t hufSuccess;
                 size_t expectedWriteSize = MIN(ZSTD_BLOCKSIZE_MAX, dstCapacity);
+                DEBUGLOG(6, "lhlCode=%u", lhlCode);
                 switch(lhlCode)
                 {
                 case 0: case 1: default:   /* note : default is impossible, since lhlCode into [0..3] */
@@ -197,6 +199,7 @@ size_t ZSTD_decodeLiteralsBlock(ZSTD_DCtx* dctx,
                             dctx->entropy.hufTable, dctx->litBuffer, litSize,
                             istart+lhSize, litCSize, dctx->workspace,
                             sizeof(dctx->workspace), ZSTD_DCtx_get_bmi2(dctx));
+                        DEBUGLOG(5, "HUF_decompress1X1_DCtx_wksp_bmi2");
 #endif
                     } else {
                         hufSuccess = HUF_decompress4X_hufOnly_wksp_bmi2(

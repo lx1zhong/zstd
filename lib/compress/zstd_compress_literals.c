@@ -132,6 +132,7 @@ size_t ZSTD_compressLiterals (ZSTD_hufCTables_t const* prevHuf,
         huf_compress_f huf_compress;
         if (repeat == HUF_repeat_valid && lhSize == 3) singleStream = 1;
         huf_compress = singleStream ? HUF_compress1X_repeat : HUF_compress4X_repeat;
+        //
         cLitSize = huf_compress(ostart+lhSize, dstCapacity-lhSize,
                                 src, srcSize,
                                 HUF_SYMBOLVALUE_MAX, LitHufLog,
